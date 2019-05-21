@@ -23,6 +23,13 @@
         src: scripts/theHarvester.sh
         dest: ~/theHarvester.sh
         mode: u+rwx
+    - name: run theharvester
+      shell: "./theHarvester.sh {{ TARGET }}"
+      args:
+        creates: "~/{{ TARGET }}.theHarvester-results.tgz"
+      async: 1000
+      poll: 0
+      register: theharvester
     - name: install amass
       shell: snap install amass
       args:
@@ -39,13 +46,6 @@
       async: 1000
       poll: 0
       register: amass
-    - name: run theharvester
-      shell: "./theHarvester.sh {{ TARGET }}"
-      args:
-        creates: "~/{{ TARGET }}.theHarvester-results.tgz"
-      async: 1000
-      poll: 0
-      register: theharvester
     - name: amass check
       async_status:
         jid: "{{ amass.ansible_job_id }}"
