@@ -1,0 +1,81 @@
+---
+- hosts: all
+  remote_user: pi
+  become: true
+  tasks:
+    - name: install requirements
+      apt:
+        force_apt_get: yes
+        pkg:
+          - screen
+          - hostapd
+          - dnsmasq
+          - iptables-persistent
+          - openvpn
+          - dnsutils
+          - tcpdump
+
+    - name: uncomment src apt repos
+      replace:
+        backup: yes
+        path: /etc/apt/sources.list
+        regexp: '^#deb-src'
+        replace: 'deb-src'
+        
+    - name: install openvpn build deps
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        name: openvpn
+        state: build-dep
+
+    - name: copy openvpn XOR build script
+      copy:
+        src: vpn/
+        dest: vpn/
+        mode: u+rwx
+    
+    - name: run openvpn XOR build script
+      shell: "cd vpn && ./vpn-xor.sh"
+      args:
+        creates: vpn/openvpn-*/src/openvpn/openvpn
+
+#    - name: disable reportgraph in theharvester
+#      lineinfile:
+#        path: theHarvester/theHarvester/__main__.py
+#        state: absent
+#        regexp: '^ +(graph = reportgraph\.GraphGenerator|HTMLcode \+= graph\.).*'
+#    - name: api keys
+#      template:
+#        src: templates/api-keys.yaml.j2
+#        dest: theHarvester/api-keys.yaml
+    - name: copy wpa_supplicant to lib
+      copy:
+        src: 10-wpa_supplicant
+        dest: /lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant
+
+    - name: copy config files to etc folder
+      copy:
+        src: etc/
+        dest: /etc/
+
+    - name: unmask and enable hostapd
+      systemd:
+        name: hostapd
+        state: started
+        masked: no
+        enabled: yes
+        
+#        mode: u+rwx
+#    - name: run theharvester
+#      shell: "./theHarvester.sh {{ TARGET }}"
+#      args:
+#        creates: "~/{{ TARGET }}.theHarvester-results.tgz"
+#      async: 1000
+#      poll: 0
+#      register: theharvester
+#    - name: fetch theharvester output
+#      fetch:
+#        src:  "~/{{ TARGET }}.theHarvester-results.tgz"
+#        dest: output/{{ TARGET }}/
+#        flat: yes
