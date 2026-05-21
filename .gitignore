@@ -1,0 +1,9 @@
+# Tool output fetched back from target hosts
+output/
+*.tgz
+
+# Ansible runtime artifacts
+*.retry
+
+# Rendered secrets — never commit
+**/api-keys.yaml
